@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Wedding Photo Booth</title>
+    <style>
+        :root {
+            --primary-pink: #fce4ec;
+            --accent-pink: #ff6b9d;
+            --admin-bg: #f5f5f5;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; font-family: 'Hiragino Sans', sans-serif;
+            background-color: #000;
+        }
+
+        .screen {
+            position: absolute; width: 100%; height: 100%;
+            display: none; flex-direction: column;
+            align-items: center; justify-content: center;
+            background-color: white; transition: opacity 0.5s;
+        }
+
+        .active { display: flex; }
+
+        /* 1. 管理者画面 (Admin) */
+        #admin-screen { background-color: var(--admin-bg); overflow-y: auto; padding: 40px; }
+        .admin-card { background: white; padding: 20px; border-radius: 15px; width: 90%; max-width: 600px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* 2. スタート画面 (Sleep) */
+        #start-screen { background: #000; }
+        #guide-video {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; opacity: 0.6;
+        }
+        .start-ui { z-index: 10; text-align: center; color: white; }
+        .admin-trigger {
+            position: absolute; bottom: 0; left: 0; width: 80px; height: 80px;
+            background: transparent; z-index: 100; cursor: pointer;
+        }
+
+        /* 3. フレーム選択画面 */
+        .frame-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; width: 90%; }
+        .frame-item { border: 4px solid transparent; border-radius: 10px; cursor: pointer; overflow: hidden; background: #eee; position: relative; }
+        .frame-item.selected { border-color: var(--accent-pink); }
+        .frame-item img { width: 100%; height: auto; display: block; }
+        /* フレームなし選択肢のデザイン */
+        .no-frame-item { display: flex; align-items: center; justify-content: center; background: #ddd; color: #666; font-weight: bold; aspect-ratio: 9/16; }
+
+        /* 4. 撮影画面 */
+        .camera-box { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        /* 修正1: srcが空の時はフレーム画像を表示しない */
+        #frame-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; opacity: 1; transition: opacity 0.3s; }
+        #frame-overlay:not([src]), #frame-overlay[src=""] { opacity: 0; }
+
+        #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; color: white; text-shadow: 0 0 20px rgba(0,0,0,0.5); font-weight: bold; }
+
+        /* 共通ボタン */
+        .btn {
+            padding: 15px 40px; font-size: 1.5rem; border: none; border-radius: 50px;
+            cursor: pointer; background: var(--accent-pink); color: white; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: 0.3s;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+        .btn-secondary { background: #666; font-size: 1rem; }
+    </style>
+</head>
+<body>
+
+    <div id="admin-screen" class="screen active">
+        <div class="admin-card">
+            <h2>⚙️ 管理者設定</h2>
+            <p>フレーム画像をアップロードしてください（透過PNG推奨）</p>
+            <input type="file" id="upload-input" multiple accept="image/png">
+            <div id="admin-frame-preview" style="display:flex; gap:10px; margin: 20px 0; flex-wrap: wrap;"></div>
+            <button class="btn" onclick="moveToStart()">設定を完了してスタート画面へ</button>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen">
+        <video id="guide-video" autoplay muted loop playsinline>
+            <source src="guide.mp4" type="video/mp4">
+        </video>
+        <div class="start-ui">
+            <h1 style="font-size: 4rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">Happy Wedding</h1>
+            <button class="btn" onclick="showScreen('frame-select-screen')">START</button>
+        </div>
+        <div class="admin-trigger" onclick="checkPasscode()"></div>
+    </div>
+
+    <div id="frame-select-screen" class="screen">
+        <h2 style="color: var(--accent-pink);">フレームを選んでね</h2>
+        <div class="frame-grid" id="frame-grid">
+            </div>
+        <div style="margin-top: 20px; display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn" id="to-shoot-btn" onclick="showScreen('shooting-screen')" disabled>撮影にすすむ</button>
+            <button class="btn btn-secondary" onclick="showScreen('start-screen')">戻る</button>
+        </div>
+    </div>
+
+    <div id="shooting-screen" class="screen">
+        <div class="camera-box">
+            <video id="webcam" autoplay playsinline muted></video>
+            <img id="frame-overlay" src="" alt=""> <div id="countdown"></div>
+        </div>
+        <button class="btn" id="shutter-btn" style="position:absolute; bottom:40px;" onclick="startTimer()">撮影！</button>
+    </div>
+
+    <div id="preview-screen" class="screen">
+        <canvas id="result-canvas" style="max-width: 80%; max-height: 70%; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);"></canvas>
+        <div style="margin-top: 20px; display: flex; gap: 20px;">
+            <button class="btn btn-secondary" onclick="showScreen('shooting-screen')">撮り直す</button>
+            <button class="btn" onclick="printTwoCopies()">印刷する</button>
+        </div>
+    </div>
+
+    <script>
+        let frames = JSON.parse(localStorage.getItem('wedding_frames')) || [];
+        let selectedFrame = null;
+        const adminPasscode = "1234"; // 管理者用パスコード
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(id);
+            target.classList.add('active');
+
+            if(id === 'frame-select-screen') renderFrames();
+            if(id === 'shooting-screen') initCamera();
+            if(id === 'start-screen') stopCamera();
+        }
+
+        // ---------- 管理者画面の処理 ----------
+        document.getElementById('upload-input').onchange = function(e) {
+            const files = e.target.files;
+            for(let f of files) {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    frames.push(ev.target.result);
+                    saveFrames();
+                };
+                reader.readAsDataURL(f);
+            }
+        };
+
+        function saveFrames() {
+            localStorage.setItem('wedding_frames', JSON.stringify(frames));
+            renderAdminPreview();
+        }
+
+        function renderAdminPreview() {
+            const div = document.getElementById('admin-frame-preview');
+            div.innerHTML = frames.map((f, i) => `
+                <div style="position:relative;">
+                    <img src="${f}" width="60" style="border:1px solid #ccc;">
+                    <button onclick="deleteFrame(${i})" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border:none; border-radius:50%; width:20px; height:20px; cursor:pointer;">×</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteFrame(i) {
+            frames.splice(i, 1);
+            saveFrames();
+        }
+
+        function moveToStart() {
+            // フレームがなくてもスタートできるように変更（フレームなし選択が可能になったため）
+            showScreen('start-screen');
+        }
+
+        function checkPasscode() {
+            const pass = prompt("管理者コードを入力してください");
+            if(pass === adminPasscode) showScreen('admin-screen');
+        }
+
+        // ---------- ゲスト用：フレーム選択 ----------
+        function renderFrames() {
+            const grid = document.getElementById('frame-grid');
+            // 「フレームなし」の選択肢を先頭に追加
+            let html = `
+                <div class="frame-item no-frame-item" onclick="selectFrame(this, null)">
+                    フレームなし
+                </div>
+            `;
+            // アップロードされたフレームを追加
+            html += frames.map((f, i) => `
+                <div class="frame-item" onclick="selectFrame(this, '${f}')">
+                    <img src="${f}">
+                </div>
+            `).join('');
+            grid.innerHTML = html;
+            
+            // 選択状態をリセット
+            selectedFrame = null;
+            document.getElementById('to-shoot-btn').disabled = true;
+            document.getElementById('frame-overlay').src = "";
+        }
+
+        function selectFrame(el, src) {
+            document.querySelectorAll('.frame-item').forEach(i => i.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedFrame = src;
+            // srcがnullの場合は空文字を入れて、CSSで非表示にする
+            document.getElementById('frame-overlay').src = src || "";
+            document.getElementById('to-shoot-btn').disabled = false;
+        }
+
+        // ---------- 撮影ロジック ----------
+        let stream = null;
+        async function initCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: 1920, height: 1080 } });
+                document.getElementById('webcam').srcObject = stream;
+            } catch(e) {
+                alert("カメラの起動に失敗しました。カメラへのアクセスを許可してください。");
+            }
+        }
+
+        function stopCamera() {
+            if(stream) stream.getTracks().forEach(t => t.stop());
+        }
+
+        function startTimer() {
+            document.getElementById('shutter-btn').disabled = true;
+            const cd = document.getElementById('countdown');
+            let count = 3;
+            cd.innerText = count;
+            const timer = setInterval(() => {
+                count--;
+                if(count > 0) cd.innerText = count;
+                else {
+                    clearInterval(timer);
+                    cd.innerText = "";
+                    capture();
+                }
+            }, 1000);
+        }
+
+        function capture() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('result-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // 1. カメラ映像を描画（ここで反転させる）
+            ctx.save(); // 現在の状態（反転なし）を保存
+            ctx.scale(-1, 1); // 左右反転
+            // 反転しているので、描画開始位置のx座標をマイナスにする必要がある
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore(); // 保存した状態（反転なし）に戻す
+
+            // 2. フレームを重ねる（反転させない！）
+            if (selectedFrame) {
+                // 修正3: フレームがある場合のみ読み込み処理を行う
+                const img = new Image();
+                img.onload = () => {
+                    // ここでは反転させずにそのまま描画
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    finalizeCapture();
+                };
+                img.onerror = () => {
+                    // 読み込み失敗時もとりあえず進む
+                    finalizeCapture();
+                }
+                img.src = selectedFrame;
+            } else {
+                // 修正3: フレームなしの場合はすぐに次の処理へ
+                finalizeCapture();
+            }
+        }
+
+        function finalizeCapture() {
+            showScreen('preview-screen');
+            document.getElementById('shutter-btn').disabled = false;
+        }
+
+        // ---------- 2枚印刷用 ----------
+        function printTwoCopies() {
+            const dataUrl = document.getElementById('result-canvas').toDataURL();
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                <head><title>Print</title></head>
+                <body style="margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; gap:20px; height: 100vh; box-sizing: border-box;">
+                    <img src="${dataUrl}" style="width:auto; height:45%; object-fit:contain; border: 1px solid #eee;">
+                    <div style="width:100%; border-top: 1px dashed #ccc;"></div>
+                    <img src="${dataUrl}" style="width:auto; height:45%; object-fit:contain; border: 1px solid #eee;">
+                    <script>
+                        window.onload = () => { 
+                            // 画像読み込み完了後に印刷ダイアログを表示
+                            setTimeout(() => {
+                                window.print(); 
+                                // 印刷ダイアログが閉じたらウィンドウを閉じる（一部ブラウザで有効）
+                                window.onafterprint = () => window.close();
+                            }, 500);
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+            win.document.close();
+            // 印刷後はスタート画面に戻る
+            setTimeout(() => showScreen('start-screen'), 1000);
+        }
+
+        // 初期表示
+        renderAdminPreview();
+    </script>
+</body>
+</html>

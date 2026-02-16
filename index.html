@@ -20,15 +20,166 @@
             user-select: none;
         }
 
+        /* ========== スリープ画面 ========== */
+        #sleep-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+            transition: opacity 0.5s ease;
+        }
+
+        #sleep-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sleep-title {
+            font-size: 72px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 50px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            letter-spacing: 4px;
+        }
+
+        .start-button {
+            padding: 25px 80px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            background: #fff;
+            border: none;
+            border-radius: 60px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        .start-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.4);
+        }
+
+        .start-button:active {
+            transform: translateY(-2px);
+        }
+
+        /* ========== フレーム選択画面 ========== */
+        #frame-select-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
+            padding: 40px;
+        }
+
+        #frame-select-screen.active {
+            display: flex;
+        }
+
+        .frame-select-title {
+            font-size: 48px;
+            color: #fff;
+            margin-bottom: 50px;
+            font-weight: bold;
+        }
+
+        .frame-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .frame-option {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 4px solid transparent;
+            text-align: center;
+        }
+
+        .frame-option:hover {
+            transform: scale(1.05);
+            border-color: #ff6b9d;
+        }
+
+        .frame-option.selected {
+            border-color: #ff6b9d;
+            box-shadow: 0 0 30px rgba(255, 107, 157, 0.6);
+        }
+
+        .frame-preview {
+            width: 100%;
+            height: 300px;
+            object-fit: contain;
+            margin-bottom: 15px;
+            background: #f5f5f5;
+            border-radius: 10px;
+        }
+
+        .frame-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .proceed-button {
+            padding: 20px 60px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            background: linear-gradient(135deg, #ff6b9d 0%, #ffa8c8 100%);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 30px rgba(255, 107, 157, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .proceed-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(255, 107, 157, 0.5);
+        }
+
+        .proceed-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
         /* ========== カメラ画面 ========== */
         #camera-container {
             position: relative;
             width: 100vw;
             height: 100vh;
             background: #000;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
+        }
+
+        #camera-container.active {
+            display: flex;
         }
 
         #video {
@@ -38,6 +189,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transform: scaleX(-1); /* カメラを左右反転（鏡像） */
         }
 
         /* フレーム画像 */
@@ -49,12 +201,16 @@
             height: 100%;
             pointer-events: none;
             z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #frame-img {
-            width: 100%;
-            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
             object-fit: contain;
+            transform: scaleX(-1); /* フレームも反転 */
         }
 
         /* ========== カウントダウン表示 ========== */
@@ -101,6 +257,36 @@
 
         #capture-btn:active {
             transform: translateX(-50%) scale(0.95);
+        }
+
+        #capture-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* ========== 戻るボタン ========== */
+        #back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+
+        #back-btn:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 1);
         }
 
         /* ========== 設定ボタン ========== */
@@ -194,36 +380,6 @@
             margin-bottom: 15px;
         }
 
-        /* フレーム選択ボタン */
-        .frame-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .frame-btn {
-            padding: 15px;
-            border: 3px solid #e0e0e0;
-            border-radius: 10px;
-            background: #f9f9f9;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .frame-btn:hover {
-            border-color: #ff6b9d;
-            background: #fff;
-        }
-
-        .frame-btn.active {
-            border-color: #ff6b9d;
-            background: #ffe8f0;
-            font-weight: bold;
-        }
-
         /* カスタムフレームアップロード */
         .upload-area {
             border: 2px dashed #ccc;
@@ -253,14 +409,61 @@
             margin-bottom: 10px;
         }
 
-        /* 現在のフレームプレビュー */
-        #current-frame-preview {
-            width: 100%;
-            max-height: 200px;
-            object-fit: contain;
-            margin-top: 15px;
+        /* フレーム管理リスト */
+        .frame-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .frame-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: #f9f9f9;
             border-radius: 10px;
             border: 2px solid #e0e0e0;
+        }
+
+        .frame-item-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-right: 15px;
+            border-radius: 5px;
+            background: #fff;
+        }
+
+        .frame-item-info {
+            flex: 1;
+        }
+
+        .frame-item-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .frame-item-type {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .delete-frame-btn {
+            padding: 8px 20px;
+            font-size: 14px;
+            color: #fff;
+            background: #ff4444;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .delete-frame-btn:hover {
+            background: #cc0000;
         }
 
         /* ========== プレビュー画面 ========== */
@@ -348,22 +551,51 @@
 
         /* ========== レスポンシブ調整 ========== */
         @media (max-width: 768px) {
-            .settings-content {
-                padding: 30px 20px;
+            .sleep-title {
+                font-size: 48px;
             }
 
-            .frame-buttons {
-                grid-template-columns: repeat(2, 1fr);
+            .start-button {
+                padding: 20px 60px;
+                font-size: 24px;
+            }
+
+            .frame-select-title {
+                font-size: 32px;
+            }
+
+            .frame-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 20px;
+            }
+
+            .settings-content {
+                padding: 30px 20px;
             }
         }
     </style>
 </head>
 <body>
+    <!-- スリープ画面 -->
+    <div id="sleep-screen">
+        <div class="sleep-title">SHOOTING START</div>
+        <button class="start-button">START</button>
+    </div>
+
+    <!-- フレーム選択画面 -->
+    <div id="frame-select-screen">
+        <div class="frame-select-title">📷 フレームを選択してください</div>
+        <div class="frame-grid" id="frame-grid">
+            <!-- フレームオプションがJSで動的に生成されます -->
+        </div>
+        <button class="proceed-button" id="proceed-btn" disabled>撮影を開始</button>
+    </div>
+
     <!-- カメラ画面 -->
     <div id="camera-container">
         <div class="loading">カメラを起動中...</div>
         <button id="retry-btn" style="display: none; position: absolute; top: 60%; left: 50%; transform: translateX(-50%); padding: 15px 30px; font-size: 18px; background: #ff6b9d; color: white; border: none; border-radius: 50px; cursor: pointer; z-index: 10;">再試行</button>
-        <video id="video" autoplay playsinline></video>
+        <video id="video" autoplay playsinline muted></video>
         
         <!-- フレーム画像 -->
         <div id="frame-overlay">
@@ -372,6 +604,9 @@
 
         <!-- カウントダウン -->
         <div id="countdown"></div>
+
+        <!-- 戻るボタン -->
+        <button id="back-btn">←</button>
 
         <!-- 設定ボタン -->
         <button id="settings-btn">⚙️</button>
@@ -384,39 +619,37 @@
     <div id="settings-modal">
         <div class="settings-content">
             <div class="settings-header">
-                <h2>⚙️ 設定</h2>
+                <h2>⚙️ フレーム管理</h2>
                 <button class="close-btn">&times;</button>
-            </div>
-
-            <!-- プリセットフレーム選択 -->
-            <div class="setting-section">
-                <h3>📷 フレームを選択</h3>
-                <div class="frame-buttons" id="preset-frames">
-                    <button class="frame-btn" data-frame="none">フレームなし</button>
-                    <button class="frame-btn active" data-frame="default">デフォルト</button>
-                    <button class="frame-btn" data-frame="elegant">エレガント</button>
-                </div>
             </div>
 
             <!-- カスタムフレームアップロード -->
             <div class="setting-section">
-                <h3>🖼️ オリジナルフレームをアップロード</h3>
+                <h3>🖼️ 新しいフレームを追加</h3>
                 <div class="upload-area" id="upload-area">
                     <div class="upload-icon">📁</div>
                     <div class="upload-label">クリックして画像を選択</div>
                     <input type="file" id="frame-upload" accept="image/*">
                 </div>
-                <img id="current-frame-preview" src="" alt="現在のフレーム" style="display: none;">
+            </div>
+
+            <!-- フレーム一覧 -->
+            <div class="setting-section">
+                <h3>📋 登録済みフレーム</h3>
+                <div class="frame-list" id="frame-list">
+                    <!-- フレーム一覧がJSで動的に生成されます -->
+                </div>
             </div>
 
             <!-- 使い方説明 -->
             <div class="setting-section">
                 <h3>ℹ️ 使い方</h3>
                 <p style="color: #666; line-height: 1.8;">
-                    1. お好きなフレームを選択<br>
-                    2. 撮影ボタンを押す<br>
-                    3. カウントダウン後に自動撮影<br>
-                    4. 印刷ボタンで出力
+                    1. STARTボタンを押す<br>
+                    2. お好きなフレームを選択<br>
+                    3. 撮影ボタンを押す<br>
+                    4. カウントダウン後に自動撮影<br>
+                    5. 印刷ボタンで出力
                 </p>
             </div>
         </div>
@@ -438,6 +671,9 @@
         // ========================================
         // 📌 グローバル変数の定義
         // ========================================
+        const sleepScreen = document.getElementById('sleep-screen');
+        const frameSelectScreen = document.getElementById('frame-select-screen');
+        const cameraContainer = document.getElementById('camera-container');
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -451,29 +687,298 @@
         const closeBtn = document.querySelector('.close-btn');
         const frameUpload = document.getElementById('frame-upload');
         const uploadArea = document.getElementById('upload-area');
-        const currentFramePreview = document.getElementById('current-frame-preview');
         const loading = document.querySelector('.loading');
         const retryBtn = document.getElementById('retry-btn');
+        const backBtn = document.getElementById('back-btn');
+        const startButton = document.querySelector('.start-button');
+        const proceedBtn = document.getElementById('proceed-btn');
+        const frameGrid = document.getElementById('frame-grid');
+        const frameList = document.getElementById('frame-list');
 
-        // プリセットフレームのURL（実際の画像URLに置き換えてください）
-        const presetFrames = {
-            'none': '',
-            'default': 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920"><rect fill="none" stroke="%23ff6b9d" stroke-width="40" x="20" y="20" width="1040" height="1880" rx="20"/><text x="540" y="100" font-size="60" fill="%23ff6b9d" text-anchor="middle" font-family="serif">💕 Happy Wedding 💕</text><text x="540" y="1860" font-size="40" fill="%23ff6b9d" text-anchor="middle" font-family="serif">Thank you for coming!</text></svg>',
-            'elegant': 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920"><rect fill="none" stroke="%23d4af37" stroke-width="30" x="40" y="40" width="1000" height="1840" rx="10"/><rect fill="none" stroke="%23d4af37" stroke-width="10" x="60" y="60" width="960" height="1800" rx="5"/><text x="540" y="130" font-size="70" fill="%23d4af37" text-anchor="middle" font-family="serif" font-style="italic">Wedding Day</text><circle cx="100" cy="100" r="30" fill="%23ffd700" opacity="0.3"/><circle cx="980" cy="100" r="30" fill="%23ffd700" opacity="0.3"/><circle cx="100" cy="1820" r="30" fill="%23ffd700" opacity="0.3"/><circle cx="980" cy="1820" r="30" fill="%23ffd700" opacity="0.3"/></svg>'
-        };
+        let selectedFrameId = null;
+        let cameraStream = null;
+
+        // プリセットフレーム（デフォルト）
+        const defaultFrames = [
+            {
+                id: 'none',
+                name: 'フレームなし',
+                type: 'preset',
+                url: ''
+            },
+            {
+                id: 'default',
+                name: 'ハッピーウェディング',
+                type: 'preset',
+                url: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920"><rect fill="none" stroke="%23ff6b9d" stroke-width="40" x="20" y="20" width="1040" height="1880" rx="20"/><text x="540" y="100" font-size="60" fill="%23ff6b9d" text-anchor="middle" font-family="serif">💕 Happy Wedding 💕</text><text x="540" y="1860" font-size="40" fill="%23ff6b9d" text-anchor="middle" font-family="serif">Thank you for coming!</text></svg>'
+            },
+            {
+                id: 'elegant',
+                name: 'エレガント',
+                type: 'preset',
+                url: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920"><rect fill="none" stroke="%23d4af37" stroke-width="30" x="40" y="40" width="1000" height="1840" rx="10"/><rect fill="none" stroke="%23d4af37" stroke-width="10" x="60" y="60" width="960" height="1800" rx="5"/><text x="540" y="130" font-size="70" fill="%23d4af37" text-anchor="middle" font-family="serif" font-style="italic">Wedding Day</text><circle cx="100" cy="100" r="30" fill="%23ffd700" opacity="0.3"/><circle cx="980" cy="100" r="30" fill="%23ffd700" opacity="0.3"/><circle cx="100" cy="1820" r="30" fill="%23ffd700" opacity="0.3"/><circle cx="980" cy="1820" r="30" fill="%23ffd700" opacity="0.3"/></svg>'
+            }
+        ];
 
         // ========================================
         // 📌 初期化処理
         // ========================================
-        async function init() {
-            // カメラの起動
-            await startCamera();
-            
-            // 保存されたフレームを読み込み
-            loadSavedFrame();
+        function init() {
+            // localStorageからフレームを読み込み
+            loadFrames();
             
             // イベントリスナーの設定
             setupEventListeners();
+        }
+
+        // ========================================
+        // 🎯 イベントリスナーの設定
+        // ========================================
+        function setupEventListeners() {
+            // STARTボタン
+            startButton.addEventListener('click', () => {
+                sleepScreen.classList.add('hidden');
+                setTimeout(() => {
+                    sleepScreen.style.display = 'none';
+                    frameSelectScreen.classList.add('active');
+                }, 500);
+            });
+
+            // フレーム選択後の「撮影を開始」ボタン
+            proceedBtn.addEventListener('click', async () => {
+                if (!selectedFrameId) return;
+                
+                frameSelectScreen.classList.remove('active');
+                cameraContainer.classList.add('active');
+                
+                // 選択されたフレームを設定
+                const frames = getFrames();
+                const selectedFrame = frames.find(f => f.id === selectedFrameId);
+                if (selectedFrame) {
+                    frameImg.src = selectedFrame.url;
+                }
+                
+                // カメラを起動
+                await startCamera();
+            });
+
+            // 戻るボタン
+            backBtn.addEventListener('click', () => {
+                stopCamera();
+                cameraContainer.classList.remove('active');
+                
+                // スリープ画面に戻る
+                sleepScreen.style.display = 'flex';
+                sleepScreen.classList.remove('hidden');
+                
+                // 選択をリセット
+                selectedFrameId = null;
+                updateFrameSelection();
+            });
+
+            // リトライボタン
+            retryBtn.addEventListener('click', () => {
+                retryBtn.style.display = 'none';
+                loading.style.display = 'block';
+                loading.textContent = 'カメラを起動中...';
+                loading.style.color = '#fff';
+                loading.style.background = 'transparent';
+                startCamera();
+            });
+            
+            // 撮影ボタン
+            captureBtn.addEventListener('click', startCountdown);
+            
+            // 設定ボタン
+            settingsBtn.addEventListener('click', () => {
+                settingsModal.classList.add('active');
+                renderFrameList();
+            });
+            
+            // 設定モーダルを閉じる
+            closeBtn.addEventListener('click', () => {
+                settingsModal.classList.remove('active');
+                // フレーム選択画面を更新
+                renderFrameGrid();
+            });
+            
+            // モーダル外をクリックで閉じる
+            settingsModal.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    settingsModal.classList.remove('active');
+                    renderFrameGrid();
+                }
+            });
+            
+            // フレームアップロード
+            uploadArea.addEventListener('click', () => {
+                frameUpload.click();
+            });
+            
+            frameUpload.addEventListener('change', handleFrameUpload);
+            
+            // プレビュー画面のボタン
+            document.querySelector('.preview-btn.retake').addEventListener('click', retakePhoto);
+            document.querySelector('.preview-btn.print').addEventListener('click', printPhoto);
+        }
+
+        // ========================================
+        // 🖼️ フレーム管理
+        // ========================================
+        function getFrames() {
+            const customFrames = JSON.parse(localStorage.getItem('customFrames') || '[]');
+            return [...defaultFrames, ...customFrames];
+        }
+
+        function saveCustomFrames(frames) {
+            const customFrames = frames.filter(f => f.type === 'custom');
+            localStorage.setItem('customFrames', JSON.stringify(customFrames));
+        }
+
+        function loadFrames() {
+            renderFrameGrid();
+        }
+
+        function renderFrameGrid() {
+            const frames = getFrames();
+            frameGrid.innerHTML = '';
+            
+            frames.forEach(frame => {
+                const option = document.createElement('div');
+                option.className = 'frame-option';
+                option.dataset.frameId = frame.id;
+                
+                const preview = document.createElement('img');
+                preview.className = 'frame-preview';
+                preview.src = frame.url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="%23f0f0f0" width="200" height="200"/><text x="100" y="100" font-size="20" fill="%23999" text-anchor="middle" dominant-baseline="middle">フレームなし</text></svg>';
+                preview.alt = frame.name;
+                
+                const name = document.createElement('div');
+                name.className = 'frame-name';
+                name.textContent = frame.name;
+                
+                option.appendChild(preview);
+                option.appendChild(name);
+                
+                option.addEventListener('click', () => {
+                    selectedFrameId = frame.id;
+                    updateFrameSelection();
+                    proceedBtn.disabled = false;
+                });
+                
+                frameGrid.appendChild(option);
+            });
+            
+            updateFrameSelection();
+        }
+
+        function updateFrameSelection() {
+            document.querySelectorAll('.frame-option').forEach(option => {
+                if (option.dataset.frameId === selectedFrameId) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+        }
+
+        function renderFrameList() {
+            const frames = getFrames();
+            frameList.innerHTML = '';
+            
+            frames.forEach(frame => {
+                const item = document.createElement('div');
+                item.className = 'frame-item';
+                
+                const preview = document.createElement('img');
+                preview.className = 'frame-item-preview';
+                preview.src = frame.url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect fill="%23f0f0f0" width="100" height="100"/></svg>';
+                
+                const info = document.createElement('div');
+                info.className = 'frame-item-info';
+                
+                const name = document.createElement('div');
+                name.className = 'frame-item-name';
+                name.textContent = frame.name;
+                
+                const type = document.createElement('div');
+                type.className = 'frame-item-type';
+                type.textContent = frame.type === 'preset' ? 'プリセット' : 'カスタム';
+                
+                info.appendChild(name);
+                info.appendChild(type);
+                
+                item.appendChild(preview);
+                item.appendChild(info);
+                
+                // カスタムフレームのみ削除ボタンを表示
+                if (frame.type === 'custom') {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-frame-btn';
+                    deleteBtn.textContent = '削除';
+                    deleteBtn.addEventListener('click', () => deleteFrame(frame.id));
+                    item.appendChild(deleteBtn);
+                }
+                
+                frameList.appendChild(item);
+            });
+        }
+
+        function deleteFrame(frameId) {
+            if (!confirm('このフレームを削除しますか?')) return;
+            
+            const frames = getFrames();
+            const filteredFrames = frames.filter(f => f.id !== frameId);
+            saveCustomFrames(filteredFrames);
+            
+            renderFrameList();
+            renderFrameGrid();
+            
+            // 削除したフレームが選択されていた場合はリセット
+            if (selectedFrameId === frameId) {
+                selectedFrameId = null;
+                proceedBtn.disabled = true;
+            }
+        }
+
+        // ========================================
+        // 📤 カスタムフレームアップロード
+        // ========================================
+        function handleFrameUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.match('image.*')) {
+                alert('画像ファイルを選択してください');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const imageData = event.target.result;
+                const frameId = 'custom_' + Date.now();
+                const frameName = file.name.replace(/\.[^/.]+$/, '');
+                
+                const newFrame = {
+                    id: frameId,
+                    name: frameName,
+                    type: 'custom',
+                    url: imageData
+                };
+                
+                const frames = getFrames();
+                frames.push(newFrame);
+                saveCustomFrames(frames);
+                
+                renderFrameList();
+                renderFrameGrid();
+                
+                alert('フレームを追加しました！');
+            };
+            reader.readAsDataURL(file);
+            
+            // 入力をリセット
+            frameUpload.value = '';
         }
 
         // ========================================
@@ -483,40 +988,36 @@
             try {
                 loading.textContent = 'カメラの許可を確認中...';
                 
-                // まずカメラが利用可能かチェック
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     throw new Error('このブラウザはカメラ機能をサポートしていません');
                 }
 
                 loading.textContent = 'カメラを起動中...';
                 
-                // よりシンプルな設定で試す
                 const constraints = {
                     video: {
                         facingMode: 'user',
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
                     },
                     audio: false
                 };
                 
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = cameraStream;
                 
-                video.srcObject = stream;
-                
-                // video要素の準備完了を待つ
                 await new Promise((resolve, reject) => {
                     video.onloadedmetadata = () => {
                         video.play()
                             .then(() => {
                                 loading.style.display = 'none';
+                                captureBtn.disabled = false;
                                 console.log('カメラ起動成功');
                                 resolve();
                             })
                             .catch(reject);
                     };
                     
-                    // タイムアウト設定（10秒）
                     setTimeout(() => {
                         reject(new Error('カメラの起動がタイムアウトしました'));
                     }, 10000);
@@ -558,65 +1059,19 @@
                 loading.style.background = 'rgba(255,255,255,0.9)';
                 loading.style.borderRadius = '10px';
                 
-                // リトライボタンを表示
                 retryBtn.style.display = 'block';
             }
         }
 
         // ========================================
-        // 🎯 イベントリスナーの設定
+        // 🛑 カメラ停止
         // ========================================
-        function setupEventListeners() {
-            // リトライボタン
-            retryBtn.addEventListener('click', () => {
-                retryBtn.style.display = 'none';
-                loading.style.display = 'block';
-                loading.textContent = 'カメラを起動中...';
-                loading.style.color = '#fff';
-                loading.style.background = 'transparent';
-                startCamera();
-            });
-            
-            // 撮影ボタン
-            captureBtn.addEventListener('click', startCountdown);
-            
-            // 設定ボタン
-            settingsBtn.addEventListener('click', () => {
-                settingsModal.classList.add('active');
-            });
-            
-            // 設定モーダルを閉じる
-            closeBtn.addEventListener('click', () => {
-                settingsModal.classList.remove('active');
-            });
-            
-            // モーダル外をクリックで閉じる
-            settingsModal.addEventListener('click', (e) => {
-                if (e.target === settingsModal) {
-                    settingsModal.classList.remove('active');
-                }
-            });
-            
-            // プリセットフレーム選択
-            document.querySelectorAll('.frame-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    selectPresetFrame(btn.dataset.frame);
-                    // アクティブ状態を更新
-                    document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                });
-            });
-            
-            // フレームアップロード
-            uploadArea.addEventListener('click', () => {
-                frameUpload.click();
-            });
-            
-            frameUpload.addEventListener('change', handleFrameUpload);
-            
-            // プレビュー画面のボタン
-            document.querySelector('.preview-btn.retake').addEventListener('click', retakePhoto);
-            document.querySelector('.preview-btn.print').addEventListener('click', printPhoto);
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                video.srcObject = null;
+            }
         }
 
         // ========================================
@@ -653,15 +1108,21 @@
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             
-            // 動画フレームをキャンバスに描画
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // 左右反転を戻すために、キャンバスを反転して描画
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
             
             // フレーム画像を重ねる
             if (frameImg.src) {
-                // フレーム画像をロード済みの場合のみ描画
                 const frameImage = new Image();
                 frameImage.onload = () => {
-                    ctx.drawImage(frameImage, 0, 0, canvas.width, canvas.height);
+                    // フレームも反転して描画
+                    ctx.save();
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(frameImage, -canvas.width, 0, canvas.width, canvas.height);
+                    ctx.restore();
                     showPreview();
                 };
                 frameImage.src = frameImg.src;
@@ -697,96 +1158,19 @@
             printWindow.document.write('</body></html>');
             printWindow.document.close();
             
-            // 画像の読み込みを待ってから印刷
             printWindow.onload = () => {
                 printWindow.print();
                 printWindow.onafterprint = () => {
                     printWindow.close();
+                    // 印刷後、スリープ画面に戻る
+                    previewContainer.classList.remove('active');
+                    stopCamera();
+                    cameraContainer.classList.remove('active');
+                    sleepScreen.style.display = 'flex';
+                    sleepScreen.classList.remove('hidden');
+                    selectedFrameId = null;
                 };
             };
-        }
-
-        // ========================================
-        // 🖼️ プリセットフレーム選択
-        // ========================================
-        function selectPresetFrame(frameType) {
-            const frameUrl = presetFrames[frameType];
-            frameImg.src = frameUrl;
-            
-            // 選択を保存
-            localStorage.setItem('selectedFrame', frameType);
-            localStorage.setItem('frameType', 'preset');
-            
-            // プレビューを更新
-            if (frameUrl) {
-                currentFramePreview.src = frameUrl;
-                currentFramePreview.style.display = 'block';
-            } else {
-                currentFramePreview.style.display = 'none';
-            }
-        }
-
-        // ========================================
-        // 📤 カスタムフレームアップロード
-        // ========================================
-        function handleFrameUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            // 画像ファイルかチェック
-            if (!file.type.match('image.*')) {
-                alert('画像ファイルを選択してください');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const imageData = event.target.result;
-                frameImg.src = imageData;
-                currentFramePreview.src = imageData;
-                currentFramePreview.style.display = 'block';
-                
-                // localStorageに保存
-                localStorage.setItem('customFrame', imageData);
-                localStorage.setItem('frameType', 'custom');
-                
-                // プリセットボタンの選択を解除
-                document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // ========================================
-        // 💾 保存されたフレームを読み込み
-        // ========================================
-        function loadSavedFrame() {
-            const frameType = localStorage.getItem('frameType');
-            
-            if (frameType === 'custom') {
-                // カスタムフレームを読み込み
-                const customFrame = localStorage.getItem('customFrame');
-                if (customFrame) {
-                    frameImg.src = customFrame;
-                    currentFramePreview.src = customFrame;
-                    currentFramePreview.style.display = 'block';
-                }
-            } else if (frameType === 'preset') {
-                // プリセットフレームを読み込み
-                const selectedFrame = localStorage.getItem('selectedFrame') || 'default';
-                selectPresetFrame(selectedFrame);
-                
-                // ボタンのアクティブ状態を更新
-                document.querySelectorAll('.frame-btn').forEach(btn => {
-                    if (btn.dataset.frame === selectedFrame) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
-                });
-            } else {
-                // デフォルト設定
-                selectPresetFrame('default');
-            }
         }
 
         // ========================================

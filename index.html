@@ -31,12 +31,12 @@
         #admin-screen { background-color: var(--admin-bg); overflow-y: auto; padding: 40px; }
         .admin-card { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
         
-        /* 2. スタート画面 (やり方動画) */
+        /* 2. スタート画面 */
         #start-screen { background: #000; }
         #guide-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
         .start-ui { z-index: 20; text-align: center; color: white; }
         
-        /* 管理者ボタン (左下・うっすら見える) */
+        /* 管理者ボタン */
         .admin-trigger {
             position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px;
             background: rgba(255, 255, 255, 0.2); border-radius: 50%; z-index: 100;
@@ -54,8 +54,7 @@
         /* 4. 撮影画面 */
         .camera-box { position: relative; width: 100%; height: 100%; background: #000; }
         #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #frame-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 15; opacity: 1; transition: opacity 0.3s; }
-        #frame-overlay:not([src]), #frame-overlay[src=""] { opacity: 0; }
+        #frame-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 15; }
         #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; color: white; z-index: 20; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.5); }
 
         /* 共通ボタン */
@@ -66,14 +65,14 @@
         }
         .btn:active { transform: scale(0.95); }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-back { background: #888; font-size: 1.2rem; padding: 12px 30px; }
     </style>
 </head>
 <body>
 
     <div id="admin-screen" class="screen active">
         <div class="admin-card">
-            <h2 style="color:#333;">⚙️ 管理者設定</h2>
-            <p style="color:#666;">フレーム画像をアップロードしてください<br>(透過PNG推奨 / qt-chanなど)</p>
+            <h2>⚙️ 管理者設定</h2>
             <input type="file" id="upload-input" multiple accept="image/png" style="margin:20px 0;">
             <div id="admin-frame-preview" style="display:flex; gap:10px; margin: 20px 0; flex-wrap: wrap; justify-content: center;"></div>
             <button class="btn" onclick="moveToStart()">設定完了 → スタート画面へ</button>
@@ -85,40 +84,41 @@
             <source src="guide.mp4" type="video/mp4">
         </video>
         <div class="start-ui">
-            <h1 style="font-size: 4.5rem; margin-bottom: 30px; text-shadow: 0 4px 15px rgba(0,0,0,0.5);">Happy Wedding</h1>
+            <h1 style="font-size: 4.5rem; margin-bottom: 30px;">Happy Wedding</h1>
             <button class="btn" onclick="goToFrameSelect()">START</button>
         </div>
         <div class="admin-trigger" onclick="checkPasscode()"></div>
     </div>
 
     <div id="frame-select-screen" class="screen">
-        <h2 style="color: var(--accent-pink); font-size: 2.5rem; margin-bottom: 10px;">フレームを選んでね</h2>
+        <h2 style="color: var(--accent-pink); font-size: 2.5rem;">フレームを選んでね</h2>
         <div class="frame-grid" id="frame-grid"></div>
-        <div style="margin-top: 30px;">
+        <div style="margin-top: 30px; display: flex; gap: 20px;">
+            <button class="btn btn-back" onclick="showScreen('start-screen')">戻る</button>
             <button class="btn" id="to-shoot-btn" onclick="goToShooting()" disabled>撮影にすすむ</button>
-            <button class="btn" style="background:#888;" onclick="showScreen('start-screen')">戻る</button>
         </div>
     </div>
 
     <div id="shooting-screen" class="screen">
         <div class="camera-box">
+            <button class="btn btn-back" style="position:absolute; top:20px; left:20px; z-index:40;" onclick="showScreen('frame-select-screen')">戻る</button>
+            
             <video id="webcam" autoplay playsinline muted></video>
-            <img id="frame-overlay" src="" alt="">
+            <img id="frame-overlay" src="">
             <div id="countdown"></div>
         </div>
         <button class="btn" id="shutter-btn" style="position:absolute; bottom:50px; z-index:30;" onclick="startTimer()">撮影！</button>
     </div>
 
     <div id="preview-screen" class="screen">
-        <canvas id="result-canvas" style="max-width: 85%; max-height: 75%; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);"></canvas>
+        <canvas id="result-canvas" style="max-width: 85%; max-height: 75%; border-radius: 15px;"></canvas>
         <div style="margin-top: 25px;">
-            <button class="btn" style="background:#888;" onclick="showScreen('shooting-screen')">撮り直す</button>
+            <button class="btn btn-back" onclick="showScreen('shooting-screen')">撮り直す</button>
             <button class="btn" onclick="printTwoCopies()">印刷する</button>
         </div>
     </div>
 
     <script>
-        // --- データ管理 ---
         let frames = [];
         try {
             const saved = localStorage.getItem('wedding_frames');
@@ -128,14 +128,12 @@
         let selectedFrame = null;
         const adminPasscode = "1234";
 
-        // --- 画面遷移管理 ---
         function showScreen(id) {
-            console.log("Switching to screen:", id);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             const target = document.getElementById(id);
             if(target) target.classList.add('active');
 
-            if(id === 'start-screen') stopCamera();
+            if(id === 'start-screen' || id === 'frame-select-screen') stopCamera();
             if(id === 'frame-select-screen') renderFrameGrid();
         }
 
@@ -143,7 +141,6 @@
         function goToFrameSelect() { showScreen('frame-select-screen'); }
         function goToShooting() { showScreen('shooting-screen'); initCamera(); }
 
-        // --- 管理者機能 ---
         document.getElementById('upload-input').onchange = function(e) {
             const files = e.target.files;
             for(let f of files) {
@@ -176,10 +173,8 @@
         function checkPasscode() {
             const pass = prompt("管理者コードを入力してください");
             if(pass === adminPasscode) showScreen('admin-screen');
-            else if(pass !== null) alert("コードが違います");
         }
 
-        // --- フレーム選択 ---
         function renderFrameGrid() {
             const grid = document.getElementById('frame-grid');
             let html = `<div class="frame-item" onclick="selectFrame(this, null)">フレームなし</div>`;
@@ -202,7 +197,6 @@
             document.getElementById('to-shoot-btn').disabled = false;
         }
 
-        // --- カメラ・撮影 ---
         let stream = null;
         async function initCamera() {
             try {
@@ -211,7 +205,7 @@
                     video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } } 
                 });
                 document.getElementById('webcam').srcObject = stream;
-            } catch(e) { alert("カメラの起動に失敗しました。Safariの設定でカメラを許可してください。"); }
+            } catch(e) { alert("カメラの起動に失敗しました。"); }
         }
 
         function stopCamera() {
@@ -219,8 +213,7 @@
         }
 
         function startTimer() {
-            const btn = document.getElementById('shutter-btn');
-            btn.disabled = true;
+            document.getElementById('shutter-btn').disabled = true;
             const cd = document.getElementById('countdown');
             let count = 3;
             cd.innerText = count;
@@ -231,7 +224,7 @@
                     clearInterval(timer);
                     cd.innerText = "";
                     capture();
-                    btn.disabled = false;
+                    document.getElementById('shutter-btn').disabled = false;
                 }
             }, 1000);
         }
@@ -242,14 +235,10 @@
             const ctx = canvas.getContext('2d');
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-
-            // 1. 自分を左右反転して描画 (鏡の状態)
             ctx.save();
             ctx.scale(-1, 1);
             ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
             ctx.restore();
-
-            // 2. フレームを「反転させずに」描画
             if (selectedFrame) {
                 const img = new Image();
                 img.onload = () => {
@@ -257,31 +246,24 @@
                     showScreen('preview-screen');
                 };
                 img.src = selectedFrame;
-            } else {
-                showScreen('preview-screen');
-            }
+            } else { showScreen('preview-screen'); }
         }
 
-        // --- 印刷 (2枚レイアウト) ---
         function printTwoCopies() {
             const dataUrl = document.getElementById('result-canvas').toDataURL();
             const win = window.open('', '_blank');
             win.document.write(`
-                <html>
-                <head><title>Print Photo</title></head>
-                <body style="margin:0; padding:20px; display:flex; flex-direction:column; align-items:center; gap:30px; height:100vh; box-sizing:border-box;">
-                    <img src="${dataUrl}" style="width:auto; height:45%; object-fit:contain; border:1px solid #eee;">
-                    <div style="width:100%; border-top:2px dashed #ccc;"></div>
-                    <img src="${dataUrl}" style="width:auto; height:45%; object-fit:contain; border:1px solid #eee;">
+                <html><body>
+                    <img src="${dataUrl}" style="width:100%; height:45%; object-fit:contain;">
+                    <div style="border-top:1px dashed #ccc; margin:10px 0;"></div>
+                    <img src="${dataUrl}" style="width:100%; height:45%; object-fit:contain;">
                     <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); }</s` + `cript>
-                </body>
-                </html>
+                </body></html>
             `);
             win.document.close();
             setTimeout(() => showScreen('start-screen'), 1500);
         }
 
-        // 初期化
         renderAdminPreview();
     </script>
 </body>

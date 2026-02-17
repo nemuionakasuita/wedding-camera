@@ -5,67 +5,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Wedding Photo Booth Premium</title>
     <style>
+        /* --- デザイン設定（CSS） --- */
         :root {
-            --primary-pink: #fce4ec;
-            --accent-pink: #ff6b9d;
-            --admin-bg: #f5f5f5;
+            --accent-pink: #ff69b4;
+            --bg-dark: #1a1a1a;
+            --frame-white: #ffffff;
         }
 
         body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
-            background-color: #000;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-dark);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: white;
         }
 
-        /* 画面共通設定 */
+        /* 各画面の基本レイアウト */
         .screen {
-            position: absolute; width: 100%; height: 100%;
-            display: none; flex-direction: column;
-            align-items: center; justify-content: center;
-            background-color: white; z-index: 10;
+            display: none; /* 基本は非表示 */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100vw;
+            height: 100vh;
+            text-align: center;
         }
 
-        .active { display: flex !important; }
-
-        /* 1. 管理者画面 */
-        #admin-screen { background-color: var(--admin-bg); overflow-y: auto; padding: 40px; }
-        .admin-card { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 600px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; }
-        
-        /* 2. スタート画面 */
-        #start-screen { background: #000; }
-        #guide-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
-        .start-ui { z-index: 20; text-align: center; color: white; }
-        
-        /* 管理者ボタン */
-        .admin-trigger {
-            position: absolute; bottom: 20px; left: 20px; width: 60px; height: 60px;
-            background: rgba(255, 255, 255, 0.2); border-radius: 50%; z-index: 100;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 24px; color: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.3);
+        .screen.active {
+            display: flex; /* activeクラスがついた画面だけ表示 */
         }
-        .admin-trigger::after { content: "⚙️"; }
 
-        /* 3. フレーム選択画面 */
-        .frame-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; padding: 20px; width: 90%; max-height: 60vh; overflow-y: auto; }
-        .frame-item { border: 4px solid #eee; border-radius: 10px; cursor: pointer; background: #fff; aspect-ratio: 9/16; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #999; text-align: center; }
-        .frame-item.selected { border-color: var(--accent-pink); background: #fff0f5; }
-        .frame-item img { width: 100%; height: 100%; object-fit: contain; }
+        /* プリクラ枠（3:4比率）のコンテナ */
+        .camera-box {
+            position: relative;
+            width: 85vw;
+            height: 113.3vw; /* 3:4比率 */
+            max-height: 70vh;
+            background-color: var(--frame-white);
+            padding: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 4px;
+        }
 
-        /* 4. 撮影画面 */
-        .camera-box { position: relative; width: 100%; height: 100%; background: #000; }
-        #webcam { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
-        #frame-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 15; }
-        #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; color: white; z-index: 20; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        video, #result-canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* 枠いっぱいに映像を広げる */
+            background-color: #333;
+        }
 
-        /* 共通ボタン */
+        /* フレーム画像をカメラの上に重ねる */
+        #frame-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
+            height: calc(100% - 20px);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* ボタンのデザイン */
         .btn {
-            padding: 18px 50px; font-size: 1.6rem; border: none; border-radius: 60px;
-            cursor: pointer; background: var(--accent-pink); color: white; font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); margin: 10px; transition: transform 0.2s;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            margin: 10px;
         }
+
         .btn:active { transform: scale(0.95); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
-        .btn-back { background: #888; font-size: 1.2rem; padding: 12px 30px; }
+        
+        .btn-main { background-color: var(--accent-pink); color: white; }
+        .btn-back { background-color: #555; color: white; }
+        .btn-print { background-color: #4CAF50; color: white; }
+
+        /* カウントダウン表示 */
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10rem;
+            color: var(--accent-pink);
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0,0,0,0.5);
+            z-index: 50;
+        }
+
+        /* フレーム選択画面のグリッド */
+        .frame-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 20px;
+            width: 90%;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+
+        .frame-item {
+            border: 2px solid transparent;
+            padding: 5px;
+            background: #333;
+        }
+
+        .frame-item.selected { border-color: var(--accent-pink); }
+        .frame-item img { width: 100%; aspect-ratio: 3/4; object-fit: contain; }
+
+        /* 管理者画面のスタイル */
+        .admin-card {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 20px;
+            width: 80%;
+        }
+
+        /* 横向き警告 */
+        @media (orientation: landscape) {
+            body::after {
+                content: "iPadを縦向きにして使ってね！";
+                position: fixed; inset: 0;
+                background: var(--accent-pink);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem; z-index: 9999;
+            }
+        }
     </style>
 </head>
 <body>
@@ -73,52 +145,53 @@
     <div id="admin-screen" class="screen active">
         <div class="admin-card">
             <h2>⚙️ 管理者設定</h2>
-            <input type="file" id="upload-input" multiple accept="image/png" style="margin:20px 0;">
+            <p>透過したPNGフレームをアップロードしてください</p>
+            <input type="file" id="upload-input" multiple accept="image/png">
             <div id="admin-frame-preview" style="display:flex; gap:10px; margin: 20px 0; flex-wrap: wrap; justify-content: center;"></div>
-            <button class="btn" onclick="moveToStart()">設定完了 → スタート画面へ</button>
+            <button class="btn btn-main" onclick="moveToStart()">設定完了 → スタート画面へ</button>
         </div>
     </div>
 
     <div id="start-screen" class="screen">
-        <video id="guide-video" autoplay muted loop playsinline>
-            <source src="guide.mp4" type="video/mp4">
-        </video>
-        <div class="start-ui">
-            <h1 style="font-size: 4.5rem; margin-bottom: 30px;">Happy Wedding</h1>
-            <button class="btn" onclick="goToFrameSelect()">START</button>
-        </div>
-        <div class="admin-trigger" onclick="checkPasscode()"></div>
+        <h1 style="font-size: 4rem; color: var(--accent-pink);">Happy Wedding</h1>
+        <p style="font-size: 1.5rem;">二人の隣で写真を撮ろう！</p>
+        <button class="btn btn-main" style="font-size: 2rem; padding: 20px 60px;" onclick="goToFrameSelect()">START</button>
+        <div style="position:fixed; bottom:0; right:0; width:50px; height:50px;" onclick="checkPasscode()"></div>
     </div>
 
     <div id="frame-select-screen" class="screen">
-        <h2 style="color: var(--accent-pink); font-size: 2.5rem;">フレームを選んでね</h2>
+        <h2 style="color: var(--accent-pink); font-size: 2rem;">フレームを選んでね</h2>
         <div class="frame-grid" id="frame-grid"></div>
-        <div style="margin-top: 30px; display: flex; gap: 20px;">
+        <div style="margin-top: 20px;">
             <button class="btn btn-back" onclick="showScreen('start-screen')">戻る</button>
-            <button class="btn" id="to-shoot-btn" onclick="goToShooting()" disabled>撮影にすすむ</button>
+            <button class="btn btn-main" id="to-shoot-btn" onclick="goToShooting()" disabled>撮影にすすむ</button>
         </div>
     </div>
 
     <div id="shooting-screen" class="screen">
         <div class="camera-box">
-            <button class="btn btn-back" style="position:absolute; top:20px; left:20px; z-index:40;" onclick="showScreen('frame-select-screen')">戻る</button>
-            
             <video id="webcam" autoplay playsinline muted></video>
             <img id="frame-overlay" src="">
             <div id="countdown"></div>
         </div>
-        <button class="btn" id="shutter-btn" style="position:absolute; bottom:50px; z-index:30;" onclick="startTimer()">撮影！</button>
+        <div class="controls">
+            <button class="btn btn-back" onclick="showScreen('frame-select-screen')">戻る</button>
+            <button class="btn btn-main" id="shutter-btn" onclick="startTimer()">撮影！</button>
+        </div>
     </div>
 
     <div id="preview-screen" class="screen">
-        <canvas id="result-canvas" style="max-width: 85%; max-height: 75%; border-radius: 15px;"></canvas>
-        <div style="margin-top: 25px;">
+        <div class="camera-box">
+            <canvas id="result-canvas"></canvas>
+        </div>
+        <div class="controls">
             <button class="btn btn-back" onclick="showScreen('shooting-screen')">撮り直す</button>
-            <button class="btn" onclick="printTwoCopies()">印刷する</button>
+            <button class="btn btn-print" onclick="printTwoCopies()">印刷する</button>
         </div>
     </div>
 
     <script>
+        // --- 処理ロジック（JavaScript） ---
         let frames = [];
         try {
             const saved = localStorage.getItem('wedding_frames');
@@ -130,17 +203,17 @@
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            const target = document.getElementById(id);
-            if(target) target.classList.add('active');
-
-            if(id === 'start-screen' || id === 'frame-select-screen') stopCamera();
+            document.getElementById(id).classList.add('active');
+            if(id === 'shooting-screen') initCamera();
+            else stopCamera();
             if(id === 'frame-select-screen') renderFrameGrid();
         }
 
         function moveToStart() { showScreen('start-screen'); }
         function goToFrameSelect() { showScreen('frame-select-screen'); }
-        function goToShooting() { showScreen('shooting-screen'); initCamera(); }
+        function goToShooting() { showScreen('shooting-screen'); }
 
+        // 管理者：画像アップロード
         document.getElementById('upload-input').onchange = function(e) {
             const files = e.target.files;
             for(let f of files) {
@@ -157,9 +230,9 @@
         function renderAdminPreview() {
             const div = document.getElementById('admin-frame-preview');
             div.innerHTML = frames.map((f, i) => `
-                <div style="position:relative; border:1px solid #ddd; padding:5px; background:#fff;">
-                    <img src="${f}" width="60" height="100" style="object-fit:contain;">
-                    <button onclick="deleteFrame(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none; cursor:pointer; width:20px; height:20px;">×</button>
+                <div style="position:relative; background:white; padding:5px; border:1px solid #ccc;">
+                    <img src="${f}" width="50" height="70" style="object-fit:contain;">
+                    <button onclick="deleteFrame(${i})" style="position:absolute; top:0; right:0; background:red; color:white; border:none;">×</button>
                 </div>
             `).join('');
         }
@@ -175,6 +248,7 @@
             if(pass === adminPasscode) showScreen('admin-screen');
         }
 
+        // フレーム選択
         function renderFrameGrid() {
             const grid = document.getElementById('frame-grid');
             let html = `<div class="frame-item" onclick="selectFrame(this, null)">フレームなし</div>`;
@@ -184,7 +258,6 @@
                 </div>
             `).join('');
             grid.innerHTML = html;
-            selectedFrame = null;
             document.getElementById('to-shoot-btn').disabled = true;
         }
 
@@ -192,28 +265,27 @@
             document.querySelectorAll('.frame-item').forEach(i => i.classList.remove('selected'));
             el.classList.add('selected');
             selectedFrame = src;
-            const overlay = document.getElementById('frame-overlay');
-            overlay.src = src || "";
+            document.getElementById('frame-overlay').src = src || "";
             document.getElementById('to-shoot-btn').disabled = false;
         }
 
+        // カメラ機能
         let stream = null;
         async function initCamera() {
             try {
-                if(stream) stopCamera();
                 stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                    video: { facingMode: 'user', width: { ideal: 1080 }, height: { ideal: 1920 } } 
                 });
                 document.getElementById('webcam').srcObject = stream;
-            } catch(e) { alert("カメラの起動に失敗しました。"); }
+            } catch(e) { alert("カメラの起動に失敗しました。HTTPSで接続しているか確認してください。"); }
         }
 
         function stopCamera() {
             if(stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
         }
 
+        // 撮影タイマー
         function startTimer() {
-            document.getElementById('shutter-btn').disabled = true;
             const cd = document.getElementById('countdown');
             let count = 3;
             cd.innerText = count;
@@ -224,21 +296,29 @@
                     clearInterval(timer);
                     cd.innerText = "";
                     capture();
-                    document.getElementById('shutter-btn').disabled = false;
                 }
             }, 1000);
         }
 
+        // 画像キャプチャ（鏡像反転対応）
         function capture() {
             const video = document.getElementById('webcam');
             const canvas = document.getElementById('result-canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.save();
+            
+            // 3:4の比率でキャンバスを作成
+            canvas.width = 1080;
+            canvas.height = 1440;
+            
+            // 左右反転（鏡のようにする）
+            ctx.translate(canvas.width, 0);
             ctx.scale(-1, 1);
-            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-            ctx.restore();
+            
+            // カメラ映像を描画
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 反転を戻してフレームを描画
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
             if (selectedFrame) {
                 const img = new Image();
                 img.onload = () => {
@@ -246,22 +326,26 @@
                     showScreen('preview-screen');
                 };
                 img.src = selectedFrame;
-            } else { showScreen('preview-screen'); }
+            } else {
+                showScreen('preview-screen');
+            }
         }
 
+        // 印刷機能（2枚並べて印刷）
         function printTwoCopies() {
             const dataUrl = document.getElementById('result-canvas').toDataURL();
             const win = window.open('', '_blank');
             win.document.write(`
-                <html><body>
-                    <img src="${dataUrl}" style="width:100%; height:45%; object-fit:contain;">
-                    <div style="border-top:1px dashed #ccc; margin:10px 0;"></div>
-                    <img src="${dataUrl}" style="width:100%; height:45%; object-fit:contain;">
+                <html>
+                <body style="margin:0; display:flex; flex-direction:column; align-items:center; gap:20px;">
+                    <img src="${dataUrl}" style="width:auto; height:45vh; object-fit:contain;">
+                    <div style="border-top:2px dashed #ccc; width:100%;"></div>
+                    <img src="${dataUrl}" style="width:auto; height:45vh; object-fit:contain;">
                     <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); }</s` + `cript>
-                </body></html>
+                </body>
+                </html>
             `);
             win.document.close();
-            setTimeout(() => showScreen('start-screen'), 1500);
         }
 
         renderAdminPreview();

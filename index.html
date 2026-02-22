@@ -155,7 +155,7 @@
             justify-content: center;
         }
         
-        /* カメラビューポート（縦長3:4固定） */
+        /* カメラビューポート（縦長固定） */
         .camera-viewport {
             position: relative;
             width: 100%;
@@ -469,7 +469,6 @@
                     video: {
                         facingMode: 'user',
                         // 解像度は指定せず、デバイスのデフォルトを使用
-                        // iPadを縦に持てば自動的に縦長になる
                         aspectRatio: { ideal: 0.75 }  // 3:4を推奨
                     }
                 };
@@ -522,7 +521,7 @@
         }
 
         // ========================================
-        // 📸 撮影処理
+        // 📸 撮影処理（縦長固定版）
         // ========================================
         function startTimer() {
             document.getElementById('shutter-btn').disabled = true;
@@ -548,24 +547,59 @@
             const canvas = document.getElementById('result-canvas');
             const ctx = canvas.getContext('2d');
             
-            // キャンバスサイズを動画と同じに
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            // ビデオの実際のサイズを取得
+            let vw = video.videoWidth;
+            let vh = video.videoHeight;
+            
+            // 強制的に縦長に修正
+            // もしvideoWidthの方が大きければ、幅と高さを入れ替える
+            if (vw > vh) {
+                // 横長になっている場合は入れ替え
+                [vw, vh] = [vh, vw];
+                console.log(`⚠️ 解像度を入れ替え: ${video.videoWidth}×${video.videoHeight} → ${vw}×${vh}`);
+            }
+            
+            // キャンバスを縦長に設定
+            canvas.width = vw;
+            canvas.height = vh;
+            
+            console.log(`📸 撮影サイズ: ${canvas.width}×${canvas.height}`);
             
             // 反転を元に戻して描画
             ctx.save();
-            ctx.scale(-1, 1);
-            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            
+            // ビデオが横長だった場合は90度回転させて縦長に
+            if (video.videoWidth > video.videoHeight) {
+                // 90度回転 + 反転
+                ctx.translate(canvas.width, 0);
+                ctx.rotate(90 * Math.PI / 180);
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, -canvas.height, 0, canvas.height, canvas.width);
+            } else {
+                // 通常の反転のみ
+                ctx.scale(-1, 1);
+                ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            }
+            
             ctx.restore();
             
             // フレーム画像を重ねる
             if (selectedFrame) {
                 const img = new Image();
                 img.onload = () => {
-                    // フレームも反転を戻して描画
                     ctx.save();
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(img, -canvas.width, 0, canvas.width, canvas.height);
+                    
+                    // フレームも同様の処理
+                    if (video.videoWidth > video.videoHeight) {
+                        ctx.translate(canvas.width, 0);
+                        ctx.rotate(90 * Math.PI / 180);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(img, -canvas.height, 0, canvas.height, canvas.width);
+                    } else {
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(img, -canvas.width, 0, canvas.width, canvas.height);
+                    }
+                    
                     ctx.restore();
                     showScreen('preview-screen');
                 };

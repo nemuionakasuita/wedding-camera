@@ -81,7 +81,16 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         
-        #webcam { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        #webcam { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    object-fit: contain; /* coverから変更：これで映像の端まで見えます */
+    background: #000;    /* 映像がない部分を黒に */
+    transform: scaleX(-1); 
+}
         #frame-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 15; transform: scaleX(-1); }
         #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; color: white; z-index: 20; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.5); }
 
@@ -249,27 +258,33 @@
             document.getElementById('to-shoot-btn').disabled = false;
         }
 
-        async function initCamera() {
-            try {
-                if(stream) stopCamera();
-                
-                // iPadに対して「絶対に縦長で送って」と要求する
-                const constraints = {
-                    video: {
-                        facingMode: 'user',
-                        width: { ideal: 1080 },
-                        height: { ideal: 1440 }
-                    }
-                };
-                
-                stream = await navigator.mediaDevices.getUserMedia(constraints);
-                const video = document.getElementById('webcam');
-                video.srcObject = stream;
-            } catch(e) {
-                alert("カメラの起動に失敗しました。カメラの許可を確認してください。");
+        // 159行目付近の constraints を修正
+async function initCamera() {
+    try {
+        if(stream) stopCamera();
+        
+        const constraints = {
+            video: {
+                facingMode: 'user',
+                // 比率を直接指定し、iPadのネイティブな4:3（縦なら3:4）を引き出す
+                aspectRatio: { ideal: 0.75 }, 
+                width: { ideal: 1080 },
+                height: { ideal: 1440 }
             }
-        }
-
+        };
+        
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const video = document.getElementById('webcam');
+        video.srcObject = stream;
+        
+        // 実際に取得できた映像のサイズをコンソールで確認（デバッグ用）
+        video.onloadedmetadata = () => {
+            console.log("取得解像度:", video.videoWidth, "x", video.videoHeight);
+        };
+    } catch(e) {
+        alert("カメラの起動に失敗しました。");
+    }
+}
         function stopCamera() {
             if(stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
         }
@@ -293,37 +308,58 @@
             }, 1000);
         }
 
-        function capture() {
-            const video = document.getElementById('webcam');
-            const canvas = document.getElementById('result-canvas');
-            const ctx = canvas.getContext('2d');
-            
-            // 出力サイズを1080x1440に完全固定！
-            canvas.width = 1080;
-            canvas.height = 1440;
-            
-            ctx.save();
-            
-            // 鏡像（左右反転）のための処理
-            ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-            
-            // ややこしい回転処理は全削除。そのまま枠いっぱいに描画するだけ。
-            // 縦に1080x1440の枠として切り取る
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            ctx.restore();
-            
-            if (selectedFrame) {
-                const img = new Image();
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    showScreen('preview-screen');
-                };
-                img.src = selectedFrame;
-            } else { 
-                showScreen('preview-screen'); 
-            }
-        }
+       // 189行目付近の capture() を丸ごと差し替え
+function capture() {
+    const video = document.getElementById('webcam');
+    const canvas = document.getElementById('result-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    canvas.width = 1080;
+    canvas.height = 1440;
+    
+    // 映像の元のサイズを取得
+    const videoW = video.videoWidth;
+    const videoH = video.videoHeight;
+    
+    // キャンバスの比率 (3:4 = 0.75)
+    const targetRatio = canvas.width / canvas.height;
+    const videoRatio = videoW / videoH;
+    
+    let sx, sy, sw, sh;
+    
+    // 映像がターゲットより横長（または縦長）な場合に中央を切り抜く計算
+    if (videoRatio > targetRatio) {
+        sw = videoH * targetRatio;
+        sh = videoH;
+        sx = (videoW - sw) / 2;
+        sy = 0;
+    } else {
+        sw = videoW;
+        sh = videoW / targetRatio;
+        sx = 0;
+        sy = (videoH - sh) / 2;
+    }
+
+    ctx.save();
+    // 鏡像処理
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    
+    // drawImage(映像, 切り取り開始X, Y, 切り取る幅, 高さ, キャンバス表示X, Y, 表示幅, 高さ)
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    
+    if (selectedFrame) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            showScreen('preview-screen');
+        };
+        img.src = selectedFrame;
+    } else { 
+        showScreen('preview-screen'); 
+    }
+}
 
         function printTwoCopies() {
             const dataUrl = document.getElementById('result-canvas').toDataURL('image/png');

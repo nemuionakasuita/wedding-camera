@@ -202,7 +202,7 @@
             try {
                 if(stream) stopCamera();
                 stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'user', width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                    video: {facingMode: 'user',width: { exact: 1080 },   // exact = 厳密に指定height: { exact: 1440 }    // 3:4の縦長}
                 });
                 document.getElementById('webcam').srcObject = stream;
             } catch(e) { alert("カメラの起動に失敗しました。"); }

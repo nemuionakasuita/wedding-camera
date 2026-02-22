@@ -80,16 +80,15 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        
-        #webcam { 
+       #webcam { 
     position: absolute; 
-    top: 0; 
-    left: 0; 
+    top: 50%; /* 中央配置 */
+    left: 50%;
+    transform: translate(-50%, -50%) scaleX(-1); /* 左右反転と中央寄せ */
     width: 100%; 
     height: 100%; 
-    object-fit: contain; /* coverから変更：これで映像の端まで見えます */
-    background: #000;    /* 映像がない部分を黒に */
-    transform: scaleX(-1); 
+    object-fit: contain !important; /* 映像を絶対に切り取らない */
+    background: #000; 
 }
         #frame-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 15; transform: scaleX(-1); }
         #countdown { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 15rem; color: white; z-index: 20; font-weight: bold; text-shadow: 0 0 30px rgba(0,0,0,0.5); }
@@ -266,21 +265,16 @@ async function initCamera() {
         const constraints = {
             video: {
                 facingMode: 'user',
-                // 比率を直接指定し、iPadのネイティブな4:3（縦なら3:4）を引き出す
-                aspectRatio: { ideal: 0.75 }, 
-                width: { ideal: 1080 },
-                height: { ideal: 1440 }
+                // 幅と高さをあえて入れ替えた理想値を指定してみる
+                width: { ideal: 1440 }, 
+                height: { ideal: 1080 },
+                aspectRatio: { ideal: 1.333333 } // 4:3（横長）を要求して、後で縦に使う
             }
         };
         
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         const video = document.getElementById('webcam');
         video.srcObject = stream;
-        
-        // 実際に取得できた映像のサイズをコンソールで確認（デバッグ用）
-        video.onloadedmetadata = () => {
-            console.log("取得解像度:", video.videoWidth, "x", video.videoHeight);
-        };
     } catch(e) {
         alert("カメラの起動に失敗しました。");
     }

@@ -27,6 +27,47 @@
 
         .active { display: flex !important; }
 
+        /* 横向き警告画面 */
+        #landscape-warning {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        #landscape-warning.show {
+            display: flex !important;
+        }
+
+        .rotate-icon {
+            font-size: 8rem;
+            margin-bottom: 30px;
+            animation: rotate-animation 2s ease-in-out infinite;
+        }
+
+        @keyframes rotate-animation {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        .warning-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .warning-subtext {
+            font-size: 1.5rem;
+            color: #ccc;
+        }
+
         /* 1. 管理者画面 */
         #admin-screen { background-color: var(--admin-bg); overflow-y: auto; padding: 40px; }
         .admin-card { 
@@ -82,7 +123,7 @@
             border-radius: 10px; 
             cursor: pointer; 
             background: #fff; 
-            aspect-ratio: 3/4;  /* 3:4に修正 */
+            aspect-ratio: 3/4;
             display: flex; 
             align-items: center; 
             justify-content: center; 
@@ -114,12 +155,11 @@
             justify-content: center;
         }
         
-        /* カメラビューポート（3:4比率を厳密に維持） */
+        /* カメラビューポート（縦長3:4固定） */
         .camera-viewport {
             position: relative;
             width: 100%;
-            max-width: calc(100vh * 0.75);  /* 高さの75%（3:4比率） */
-            aspect-ratio: 3/4;
+            height: 100%;
             background: #000;
             overflow: hidden;
         }
@@ -131,7 +171,7 @@
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
-            transform: scaleX(-1);  /* 鏡像表示 */
+            transform: scaleX(-1);
         }
         
         #frame-overlay { 
@@ -143,7 +183,7 @@
             object-fit: contain; 
             pointer-events: none; 
             z-index: 15;
-            transform: scaleX(-1);  /* フレームも反転 */
+            transform: scaleX(-1);
         }
         
         #countdown { 
@@ -176,7 +216,7 @@
         .btn:disabled { background: #ccc; cursor: not-allowed; }
         .btn-back { background: #888; font-size: 1.2rem; padding: 12px 30px; }
         
-        /* デバッグ情報（開発時のみ表示） */
+        /* デバッグ情報 */
         .debug-info {
             position: absolute;
             top: 80px;
@@ -196,15 +236,22 @@
 </head>
 <body>
 
+    <!-- 横向き警告画面 -->
+    <div id="landscape-warning">
+        <div class="rotate-icon">📱</div>
+        <div class="warning-text">iPadを縦向きにしてください</div>
+        <div class="warning-subtext">Please rotate to portrait mode</div>
+    </div>
+
     <div id="admin-screen" class="screen active">
         <div class="admin-card">
             <h2>⚙️ 管理者設定</h2>
             
             <div class="admin-info">
                 <strong>📐 フレーム画像の推奨仕様</strong><br>
-                サイズ: <strong>1080×1440px</strong> (3:4比率)<br>
+                サイズ: <strong>1080×1440px</strong> (縦長 3:4)<br>
                 形式: PNG（透過背景推奨）<br>
-                向き: 縦長
+                向き: 縦長（iPadと同じ向き）
             </div>
             
             <input type="file" id="upload-input" multiple accept="image/png,image/jpeg" style="margin:20px 0;">
@@ -236,7 +283,7 @@
 
     <div id="shooting-screen" class="screen">
         <div class="camera-box">
-            <!-- デバッグ情報（DEBUG_MODE = true のときのみ表示） -->
+            <!-- デバッグ情報 -->
             <div class="debug-info" id="debug-info"></div>
             
             <button class="btn btn-back" style="position:absolute; top:20px; left:20px; z-index:40;" onclick="backToFrameSelect()">戻る</button>
@@ -263,16 +310,33 @@
         // 📌 設定
         // ========================================
         const CONFIG = {
-            // カメラ解像度（iPad 11 Pro最適化）
-            CAMERA_WIDTH: 1080,
-            CAMERA_HEIGHT: 1440,
-            
             // 管理者パスコード
             ADMIN_PASSCODE: "1234",
             
             // デバッグモード（開発時はtrueに）
             DEBUG_MODE: false
         };
+
+        // ========================================
+        // 📱 画面向き検知
+        // ========================================
+        function checkOrientation() {
+            const warning = document.getElementById('landscape-warning');
+            
+            // 横向きの場合
+            if (window.innerWidth > window.innerHeight) {
+                warning.classList.add('show');
+            } else {
+                warning.classList.remove('show');
+            }
+        }
+
+        // 画面向き変更を監視
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', checkOrientation);
+        
+        // 初回チェック
+        checkOrientation();
 
         // ========================================
         // 📌 グローバル変数
@@ -322,7 +386,6 @@
         
         function retakePhoto() {
             showScreen('shooting-screen');
-            // カメラは既に起動中なのでinitCameraは不要
         }
 
         // ========================================
@@ -379,7 +442,6 @@
             `).join('');
             grid.innerHTML = html;
             
-            // 選択状態をリセット
             selectedFrame = null;
             document.getElementById('to-shoot-btn').disabled = true;
         }
@@ -389,28 +451,26 @@
             el.classList.add('selected');
             selectedFrame = src;
             
-            // フレーム画像を設定
             const overlay = document.getElementById('frame-overlay');
             overlay.src = src || "";
             
-            // 撮影ボタンを有効化
             document.getElementById('to-shoot-btn').disabled = false;
         }
 
         // ========================================
-        // 📷 カメラ制御（iPad 11 Pro最適化）
+        // 📷 カメラ制御（縦向き固定）
         // ========================================
         async function initCamera() {
             try {
                 if(stream) stopCamera();
                 
-                // iPad 11 Pro に最適化された設定
+                // 縦向き専用の設定
                 const constraints = {
                     video: {
                         facingMode: 'user',
-                        width: { exact: CONFIG.CAMERA_WIDTH },    // 厳密に1080px
-                        height: { exact: CONFIG.CAMERA_HEIGHT },  // 厳密に1440px
-                        frameRate: { ideal: 30 }
+                        // 解像度は指定せず、デバイスのデフォルトを使用
+                        // iPadを縦に持てば自動的に縦長になる
+                        aspectRatio: { ideal: 0.75 }  // 3:4を推奨
                     }
                 };
                 
@@ -423,7 +483,7 @@
                     video.onloadedmetadata = () => {
                         video.play()
                             .then(() => {
-                                console.log(`✅ カメラ起動成功: ${video.videoWidth}×${video.videoHeight}`);
+                                console.log(`✅ カメラ起動: ${video.videoWidth}×${video.videoHeight}`);
                                 
                                 // デバッグ情報表示
                                 if(CONFIG.DEBUG_MODE) {
@@ -433,8 +493,7 @@
                                     debugInfo.innerHTML = `
                                         解像度: ${video.videoWidth}×${video.videoHeight}<br>
                                         アスペクト比: ${aspectRatio}<br>
-                                        目標: 1080×1440 (0.750)<br>
-                                        ${aspectRatio === '0.750' ? '✅ 完全一致' : '⚠️ ズレあり'}
+                                        向き: ${video.videoWidth < video.videoHeight ? '縦' : '横'}
                                     `;
                                 }
                                 
@@ -443,7 +502,6 @@
                             .catch(reject);
                     };
                     
-                    // タイムアウト（10秒）
                     setTimeout(() => {
                         reject(new Error('カメラ起動タイムアウト'));
                     }, 10000);
@@ -451,26 +509,7 @@
                 
             } catch(e) {
                 console.error('カメラエラー:', e);
-                
-                // exact指定で失敗した場合のフォールバック
-                if(e.name === 'OverconstrainedError' || e.message.includes('constraint')) {
-                    console.warn('exact指定失敗、idealで再試行...');
-                    try {
-                        stream = await navigator.mediaDevices.getUserMedia({
-                            video: {
-                                facingMode: 'user',
-                                width: { ideal: CONFIG.CAMERA_WIDTH },
-                                height: { ideal: CONFIG.CAMERA_HEIGHT }
-                            }
-                        });
-                        document.getElementById('webcam').srcObject = stream;
-                        alert('カメラを起動しましたが、解像度が異なる可能性があります。');
-                    } catch(e2) {
-                        alert("カメラの起動に失敗しました。\n\n" + e2.message);
-                    }
-                } else {
-                    alert("カメラの起動に失敗しました。\n\nカメラの許可を確認してください。");
-                }
+                alert("カメラの起動に失敗しました。\n\nカメラの許可を確認してください。");
             }
         }
 
@@ -590,8 +629,7 @@
         // ========================================
         window.addEventListener('DOMContentLoaded', () => {
             renderAdminPreview();
-            console.log('Wedding Photo Booth 起動完了');
-            console.log(`設定: ${CONFIG.CAMERA_WIDTH}×${CONFIG.CAMERA_HEIGHT}`);
+            console.log('Wedding Photo Booth 起動完了（縦向き専用）');
         });
     </script>
 </body>

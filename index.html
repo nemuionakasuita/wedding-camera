@@ -266,18 +266,24 @@ async function initCamera() {
         const constraints = {
             video: {
                 facingMode: 'user',
-                // 幅と高さをあえて入れ替えた理想値を指定してみる
-                width: { ideal: 1440 }, 
-                height: { ideal: 1080 },
-                aspectRatio: { ideal: 1.333333 } // 4:3（横長）を要求して、後で縦に使う
+                // 縦持ち（Portrait）なので、幅を狭く、高さを長く指定する
+                width: { ideal: 1080 }, 
+                height: { ideal: 1440 },
+                aspectRatio: { ideal: 0.75 } // 3:4 (縦長) を明確に要求
             }
         };
         
         stream = await navigator.mediaDevices.getUserMedia(constraints);
         const video = document.getElementById('webcam');
         video.srcObject = stream;
+
+        // 【追加】映像が読み込まれたら、実際のサイズを元に計算を行う
+        video.onloadedmetadata = () => {
+            video.play();
+            console.log("実際の映像解像度:", video.videoWidth, "x", video.videoHeight);
+        };
     } catch(e) {
-        alert("カメラの起動に失敗しました。");
+        alert("カメラの起動に失敗しました。設定を確認してください。");
     }
 }
         function stopCamera() {
@@ -309,40 +315,43 @@ function capture() {
     const canvas = document.getElementById('result-canvas');
     const ctx = canvas.getContext('2d');
     
+    // 出力サイズは 3:4 の 1080x1440 に固定
     canvas.width = 1080;
     canvas.height = 1440;
     
-    const videoW = video.videoWidth;
-    const videoH = video.videoHeight;
+    const vW = video.videoWidth;
+    const vH = video.videoHeight;
+    
+    // キャンバスの比率 (0.75) に対して、実際の映像がどうなのかを判定
     const targetRatio = canvas.width / canvas.height;
-    const videoRatio = videoW / videoH;
+    const videoRatio = vW / vH;
     
     let sx, sy, sw, sh;
 
-    // どんな映像が来ても「中心を抜き出して枠いっぱいに広げる」計算
     if (videoRatio > targetRatio) {
-        // 映像が横長すぎる場合（左右を捨てる）
-        sw = videoH * targetRatio;
-        sh = videoH;
-        sx = (videoW - sw) / 2;
+        // 映像が横に長すぎる場合（左右をカットして高さを合わせる）
+        sw = vH * targetRatio;
+        sh = vH;
+        sx = (vW - sw) / 2;
         sy = 0;
     } else {
-        // 映像が縦長すぎる場合（上下を捨てる）
-        sw = videoW;
-        sh = videoW / targetRatio;
+        // 映像が縦に長すぎる場合（上下をカットして幅を合わせる）
+        sw = vW;
+        sh = vW / targetRatio;
         sx = 0;
-        sy = (videoH - sh) / 2;
+        sy = (vH - sh) / 2;
     }
 
     ctx.save();
+    // 鏡像（左右反転）
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     
-    // ここで canvas.width, canvas.height を指定することで、隙間なく描き込みます
+    // 【重要】drawImageで sx, sy, sw, sh を使って「映像の真ん中」を「キャンバス全体」に描く
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     ctx.restore();
     
-    // フレームを重ねる処理（以下変更なし）
+    // フレームを重ねる
     if (selectedFrame) {
         const img = new Image();
         img.onload = () => {

@@ -312,23 +312,22 @@ function capture() {
     canvas.width = 1080;
     canvas.height = 1440;
     
-    // 映像の元のサイズを取得
     const videoW = video.videoWidth;
     const videoH = video.videoHeight;
-    
-    // キャンバスの比率 (3:4 = 0.75)
     const targetRatio = canvas.width / canvas.height;
     const videoRatio = videoW / videoH;
     
     let sx, sy, sw, sh;
-    
-    // 映像がターゲットより横長（または縦長）な場合に中央を切り抜く計算
+
+    // どんな映像が来ても「中心を抜き出して枠いっぱいに広げる」計算
     if (videoRatio > targetRatio) {
+        // 映像が横長すぎる場合（左右を捨てる）
         sw = videoH * targetRatio;
         sh = videoH;
         sx = (videoW - sw) / 2;
         sy = 0;
     } else {
+        // 映像が縦長すぎる場合（上下を捨てる）
         sw = videoW;
         sh = videoW / targetRatio;
         sx = 0;
@@ -336,14 +335,14 @@ function capture() {
     }
 
     ctx.save();
-    // 鏡像処理
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     
-    // drawImage(映像, 切り取り開始X, Y, 切り取る幅, 高さ, キャンバス表示X, Y, 表示幅, 高さ)
+    // ここで canvas.width, canvas.height を指定することで、隙間なく描き込みます
     ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
     ctx.restore();
     
+    // フレームを重ねる処理（以下変更なし）
     if (selectedFrame) {
         const img = new Image();
         img.onload = () => {
